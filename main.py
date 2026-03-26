@@ -5,7 +5,13 @@ from scipy import stats
 from scipy.stats import norm, uniform, expon
 
 # ============== ИМПОРТ ДАННЫХ ==============
-df = pd.read_csv('RGR1_A-3_X1-X4.csv')
+from pathlib import Path
+
+# Получаем директорию скрипта
+script_dir = Path(__file__).parent
+csv_path = script_dir / 'RGR1_A-3_X1-X4.csv'
+
+df = pd.read_csv(csv_path)
 columns = ['X1', 'X2', 'X3']
 
 print("=" * 70)
