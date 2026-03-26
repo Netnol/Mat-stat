@@ -184,6 +184,147 @@ for col in columns:
         print(f"  → Закон: U(a={min_val:.2f}, b={max_val:.2f})")
 
 # ═══════════════════════════════════════════════════════════════════
+# 2.1 ОПРЕДЕЛЕНИЕ ТИПА РАСПРЕДЕЛЕНИЯ (ПО ТАБЛИЦЕ ВАРИАНТОВ)
+# ═══════════════════════════════════════════════════════════════════
+print("\n" + "=" * 70)
+print("2.1 ТИП РАСПРЕДЕЛЕНИЯ ПО ТАБЛИЦЕ ВАРИАНТОВ")
+print("=" * 70)
+
+distribution_results = {}
+
+for col in columns:
+    data = df[col].values
+    n = len(data)
+    mean = np.mean(data)
+    std = np.std(data, ddof=1)
+    skewness = stats.skew(data)
+    kurtosis = stats.kurtosis(data)
+    cv = (std / mean) * 100  # Коэффициент вариации
+    min_val, max_val = data.min(), data.max()
+
+    # Выбросы
+    q1, q3 = np.percentile(data, [25, 75])
+    iqr = q3 - q1
+    outliers = data[(data < q1 - 1.5 * iqr) | (data > q3 + 1.5 * iqr)]
+
+    print(f"\n{'=' * 50}")
+    print(f"{col}")
+    print(f"{'=' * 50}")
+
+    # Логика определения варианта
+    variant = None
+    distr_type = ""
+    justification = []
+
+    # === ЭКСПОНЕНЦИАЛЬНОЕ (Варианты 4-5) ===
+    if skewness > 1.0 and min_val >= 0:
+        if cv > 80:  # Сильный разброс
+            variant = 4
+            distr_type = "Экспоненциальное"
+            justification.append("Резкий пик у левой границы (x ≈ 0)")
+            justification.append("Длинный правый хвост")
+            justification.append(f"Асимметрия = {skewness:.2f} > 1")
+            justification.append(f"Коэф.вариации = {cv:.1f}% > 80%")
+        else:
+            variant = 5
+            distr_type = "Экспоненциальное (пологий спад)"
+            justification.append("Менее выраженный пик")
+            justification.append("Более равномерный спад")
+
+    # === РАВНОМЕРНОЕ (Вариант 6) ===
+    elif abs(skewness) < 0.5 and cv > 25 and cv < 40:
+        # Проверка на равномерность через количество выбросов и форму
+        variant = 6
+        distr_type = "Равномерное"
+        justification.append("Все столбцы гистограммы примерно одинаковой высоты")
+        justification.append("Нет явного пика (моды)")
+        justification.append(f"Асимметрия = {skewness:.2f} ≈ 0")
+        justification.append(f"Диапазон: [{min_val:.1f}, {max_val:.1f}]")
+
+    # === НОРМАЛЬНОЕ (Варианты 1-3) ===
+    elif abs(skewness) < 0.5:
+        if cv < 20:
+            variant = 2
+            distr_type = "Нормальное (узкое)"
+            justification.append("Высокий узкий колокол")
+            justification.append(f"Малый разброс (CV = {cv:.1f}%)")
+        elif cv > 40:
+            variant = 3
+            distr_type = "Нормальное (широкое)"
+            justification.append("Низкий широкий колокол")
+            justification.append(f"Большой разброс (CV = {cv:.1f}%)")
+        else:
+            variant = 1
+            distr_type = "Нормальное"
+            justification.append("Симметричный колокол")
+            justification.append("Один пик (унимодальное)")
+            justification.append(f"Асимметрия = {skewness:.2f} ≈ 0")
+
+    # === БИМОДАЛЬНОЕ (Варианты 7-9) ===
+    # (Если бы было два пика - нужна дополнительная проверка гистограммы)
+
+    # === НОРМАЛЬНОЕ + ВЫБРОСЫ (Варианты 10-12) ===
+    elif len(outliers) > 3 and abs(skewness) < 1.0:
+        if len(outliers) > 5:
+            variant = 10
+            distr_type = "Нормальное + выбросы"
+        else:
+            variant = 11
+            distr_type = "Нормальное + выбросы"
+        justification.append(f"Основной колокол + {len(outliers)} выброс(ов)")
+        justification.append(f"Выбросы: {np.round(outliers, 1)}")
+
+    # === СМЕСЬ РАСПРЕДЕЛЕНИЙ (Варианты 13-14) ===
+    elif skewness > 0.8 and len(outliers) > 5:
+        variant = 13
+        distr_type = "Смесь нормального и экспоненциального"
+        justification.append("Пик в центре + хвост справа")
+        justification.append(f"Много выбросов ({len(outliers)} шт.)")
+
+    # === ПО УМОЛЧАНИЮ ===
+    else:
+        variant = 1
+        distr_type = "Нормальное (приближённо)"
+        justification.append("Наиболее близкое к нормальному")
+
+    # Сохраняем результат
+    distribution_results[col] = {
+        'variant': variant,
+        'type': distr_type,
+        'justification': justification
+    }
+
+    # Вывод
+    print(f"  📊 ВАРИАНТ {variant}: {distr_type}")
+    print(f"  Обоснование:")
+    for j in justification:
+        print(f"    • {j}")
+
+# Итоговая таблица
+print("\n" + "=" * 70)
+print("ИТОГОВАЯ ТАБЛИЦА РАСПРЕДЕЛЕНИЙ")
+print("=" * 70)
+
+summary_data = []
+for col in columns:
+    res = distribution_results[col]
+    data = df[col].values
+    summary_data.append({
+        'Столбец': col,
+        'Вариант': res['variant'],
+        'Тип распределения': res['type'],
+        'Асимметрия': round(stats.skew(data), 3),
+        'CV (%)': round((np.std(data, ddof=1) / np.mean(data)) * 100, 1),
+        'Выбросов': len(
+            data[(data < np.percentile(data, 25) - 1.5 * (np.percentile(data, 75) - np.percentile(data, 25))) |
+                 (data > np.percentile(data, 75) + 1.5 * (np.percentile(data, 75) - np.percentile(data, 25)))])
+    })
+
+summary_df = pd.DataFrame(summary_data)
+print(summary_df.to_string(index=False))
+summary_df.to_csv('2.1_distribution_summary.csv', index=False, encoding='utf-8-sig')
+
+# ═══════════════════════════════════════════════════════════════════
 # 2.2 СУЩЕСТВЕННЫЕ ПРИЗНАКИ ДЛЯ ВЫВОДА
 # ═══════════════════════════════════════════════════════════════════
 print("\n" + "=" * 70)
