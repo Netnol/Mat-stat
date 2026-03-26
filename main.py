@@ -363,7 +363,3 @@ for col in columns:
 
     cv = (std / mean) * 100
     print(f"    • Коэффициент вариации: {cv:.1f}%")
-
-print("\n" + "=" * 70)
-print("✅ Графики сохранены: 1.1_ecdf.png, 1.2_histogram_X*.png")
-print("=" * 70)
