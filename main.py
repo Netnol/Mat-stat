@@ -135,7 +135,7 @@ for col in columns:
 
     # Сравнение среднего и медианы
     diff = abs(mean - median)
-    write_report(f"\n  ⭐ Сравнение x̄ и медианы:")
+    write_report(f"\n   Сравнение x̄ и медианы:")
     write_report(f"     |x̄ - m̃e| = {diff:.4f} ({diff / std_unbiased * 100:.1f}% от σ̂)")
     if diff < 0.1 * std_unbiased:
         write_report(f"     → Подтверждает симметричность")
@@ -143,7 +143,7 @@ for col in columns:
         write_report(f"     → Указывает на асимметрию")
 
     # Рекомендация меры центра
-    write_report(f"\n  ⭐ Мера центра:")
+    write_report(f"\n   Мера центра:")
     if abs(skewness) > 1:
         write_report(f"     → МЕДИАНА (асимметрия = {skewness:.3f} > 1)")
     else:
