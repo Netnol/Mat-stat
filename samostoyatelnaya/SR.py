@@ -87,11 +87,3 @@ else:
     print("На уровне значимости 0.05 нет оснований утверждать, что")
     print("математические ожидания выборок различны")
     print("=" * 60)
-
-# p-value
-p_value = 2 * (1 - stats.t.cdf(abs(t_obs), k))
-print(f"\np-value = {p_value:.4f}")
-if p_value < alpha:
-    print("p-value < α, поэтому H0 отвергается")
-else:
-    print("p-value ≥ α, поэтому H0 не отвергается")
