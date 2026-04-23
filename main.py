@@ -177,6 +177,7 @@ for col in columns:
         'min': data.min(), 'max': data.max(), 'q1': q1, 'q3': q3,
         'outliers': len(outliers), 'bins': bins_dict
     }
+    print(results)
 
 # ============== ПОСТРОЕНИЕ ГРАФИКОВ (4.1.2 и 4.1.3) ==============
 write_report("\n" + "-" * 60)
